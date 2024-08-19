@@ -1,0 +1,68 @@
+import re
+from collections import defaultdict, Counter
+import nltk
+from nltk.corpus import stopwords
+
+nltk.download('stopwords')
+stop_words = set(stopwords.words('english'))
+
+def extract_keywords(text):
+    words = re.findall(r'\b\w+\b', text.lower())
+    filtered_words = [word for word in words if word not in stop_words]
+    return filtered_words
+
+def create_idea_web(keywords):
+    idea_web = defaultdict(list)
+    for keyword in keywords:
+        for related_keyword in keywords:
+            if keyword != related_keyword and related_keyword not in idea_web[keyword]:
+                idea_web[keyword].append(related_keyword)
+    return idea_web
+
+def save_idea_web_to_file(idea_web, filename):
+    with open(filename, 'w') as file:
+        for keyword, related_keywords in idea_web.items():
+            file.write(f"{keyword}: {', '.join(related_keywords)}\n")
+
+def learn_from_inputs(inputs):
+    keyword_counter = Counter()
+    for input_text in inputs:
+        keywords = extract_keywords(input_text)
+        keyword_counter.update(keywords)
+    return keyword_counter
+
+def suggest_related_ideas(keyword_counter, current_input):
+    current_keywords = extract_keywords(current_input)
+    suggestions = []
+    for keyword in current_keywords:
+        if keyword in keyword_counter:
+            related_keywords = [k for k, v in keyword_counter.items() if k != keyword]
+            suggestions.extend(related_keywords)
+    return suggestions
+
+# Main program loop
+print("Welcome to the Brainstorming Program!")
+user_input = input("Please enter your initial idea: ")
+
+all_inputs = []
+all_keywords = set()
+while user_input.lower() != "done":
+    all_inputs.append(user_input)
+    keywords = extract_keywords(user_input)
+    all_keywords.update(keywords)
+    idea_web = create_idea_web(all_keywords)
+    
+    # Learn from inputs and suggest related ideas
+    keyword_counter = learn_from_inputs(all_inputs)
+    suggestions = suggest_related_ideas(keyword_counter, user_input)
+    
+    print("\nKeywords:", keywords)
+    print("Idea Web:", dict(idea_web))
+    print("Suggested related ideas:", suggestions)
+    
+    user_input = input("\nEnter another idea or type 'done' to finish: ")
+
+# Save the idea web to a file
+filename = "idea_web2.txt"
+save_idea_web_to_file(idea_web, filename)
+print(f"Your ideas have been saved to {filename}. Thank you for using the Brainstorming Program!")
